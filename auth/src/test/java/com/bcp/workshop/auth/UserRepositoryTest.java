@@ -43,7 +43,7 @@ class UserRepositoryTest {
                     """);
         }
 
-        UserRepository repository = new UserRepository(databaseUrl, passwordHasher);
+        UserRepository repository = new UserRepository(databaseUrl, true, passwordHasher);
         repository.initialize();
 
         Optional<UserRecord> migratedUser = repository.findByUsername("legacy");
@@ -64,10 +64,32 @@ class UserRepositoryTest {
     @Test
     void parameterizedLookupDoesNotMatchUnstoredUsername(@TempDir Path directory) {
         String databaseUrl = "jdbc:sqlite:" + directory.resolve("users.db");
-        UserRepository repository = new UserRepository(databaseUrl, passwordHasher);
+        UserRepository repository = new UserRepository(databaseUrl, true, passwordHasher);
         repository.initialize();
 
         assertTrue(repository.findByUsername("student").isPresent());
         assertTrue(repository.findByUsername("unknown'example").isEmpty());
+    }
+
+    @Test
+    void doesNotSeedWorkshopUsersWhenSeedingIsDisabled(@TempDir Path directory) {
+        String databaseUrl = "jdbc:sqlite:" + directory.resolve("users.db");
+        UserRepository repository = new UserRepository(databaseUrl, false, passwordHasher);
+
+        repository.initialize();
+
+        assertFalse(repository.findByUsername("student").isPresent());
+        assertFalse(repository.findByUsername("trainer").isPresent());
+    }
+
+    @Test
+    void seedsWorkshopUsersWhenSeedingIsEnabled(@TempDir Path directory) {
+        String databaseUrl = "jdbc:sqlite:" + directory.resolve("users.db");
+        UserRepository repository = new UserRepository(databaseUrl, true, passwordHasher);
+
+        repository.initialize();
+
+        assertTrue(repository.findByUsername("student").isPresent());
+        assertTrue(repository.findByUsername("trainer").isPresent());
     }
 }

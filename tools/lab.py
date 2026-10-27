@@ -10,9 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(command, component):
+def run(command, component, env=None):
     print(f'[{component}] {" ".join(map(str, command))}', flush=True)
-    return subprocess.run(list(map(str, command)), cwd=ROOT / component).returncode
+    return subprocess.run(list(map(str, command)), cwd=ROOT / component, env=env).returncode
 
 
 def python_api():
@@ -27,6 +27,10 @@ def execute(action, component):
         if not maven:
             print('auth requiere JDK 21 y Maven 3.9+. También puedes usar Compose.', file=sys.stderr)
             return 1
+        if action == 'start':
+            environment = os.environ.copy()
+            environment.setdefault('AUTH_SEED_ENABLED', 'true')
+            return run([maven, 'quarkus:dev'], 'auth', environment)
         return run([maven, {'setup': '--version', 'start': 'quarkus:dev', 'test': 'verify'}[action]], 'auth')
     if component == 'api':
         executable = python_api()
