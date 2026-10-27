@@ -170,6 +170,11 @@ No hubo fallos ni errores en la ejecución registrada.
   indistinguible.
 - CodeQL y Dependency Review remotos no forman parte de `mvn verify` y no se
   ejecutaron en esta validación.
+- En CI remoto del PR #22, `auth`, `api`, `web`, `analyze (javascript-typescript)`
+  y `analyze (python)` pasaron; `analyze (java-kotlin)` seguía pendiente al
+  registrar esta evidencia. CodeQL fue omitido y `dependencies` falló porque el
+  Dependency Graph del repositorio está deshabilitado. No se omitió ni redujo
+  ningún gate.
 
 ## Pruebas propuestas
 
