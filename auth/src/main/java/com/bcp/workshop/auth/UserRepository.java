@@ -50,14 +50,17 @@ public class UserRepository {
             """;
 
     private final String databaseUrl;
+    private final boolean seedEnabled;
     private final PasswordHasher passwordHasher;
 
     @Inject
     public UserRepository(
             @ConfigProperty(name = "auth.db.url") String databaseUrl,
+            @ConfigProperty(name = "auth.seed.enabled") boolean seedEnabled,
             PasswordHasher passwordHasher
     ) {
         this.databaseUrl = databaseUrl;
+        this.seedEnabled = seedEnabled;
         this.passwordHasher = passwordHasher;
     }
 
@@ -119,20 +122,22 @@ public class UserRepository {
                 } else {
                     migratePasswordColumnsIfRequired(connection);
                 }
-                ensureSeedUser(
-                        connection,
-                        STUDENT_USERNAME,
-                        STUDENT_PASSWORD,
-                        STUDENT_DISPLAY_NAME,
-                        STUDENT_ROLE
-                );
-                ensureSeedUser(
-                        connection,
-                        TRAINER_USERNAME,
-                        TRAINER_PASSWORD,
-                        TRAINER_DISPLAY_NAME,
-                        TRAINER_ROLE
-                );
+                if (seedEnabled) {
+                    ensureSeedUser(
+                            connection,
+                            STUDENT_USERNAME,
+                            STUDENT_PASSWORD,
+                            STUDENT_DISPLAY_NAME,
+                            STUDENT_ROLE
+                    );
+                    ensureSeedUser(
+                            connection,
+                            TRAINER_USERNAME,
+                            TRAINER_PASSWORD,
+                            TRAINER_DISPLAY_NAME,
+                            TRAINER_ROLE
+                    );
+                }
                 connection.commit();
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();

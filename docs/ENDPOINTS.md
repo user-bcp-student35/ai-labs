@@ -171,17 +171,17 @@ campo `message`.
 | HTTP 400 | El cuerpo JSON es `null`. | `{"message":"Request is null"}` |
 | HTTP 400 | `username` es nulo, está ausente o contiene solo espacios. | `{"message":"Username is required"}` |
 | HTTP 400 | `password` es nula, está ausente o contiene solo espacios. | `{"message":"Password is required"}` |
+| HTTP 400 | El JSON está malformado. | `{"message":"Malformed request"}` |
+| HTTP 415 | El `Content-Type` no es soportado por el recurso. | `{"message":"Unsupported media type"}` |
 | HTTP 401 | Usuario inexistente o contraseña incorrecta. El mensaje incluye el username enviado. | `{"message":"Invalid user unknown or password"}` |
-| HTTP 500 | Una excepción no controlada llega al mapper de autenticación. Los detalles se registran en el servidor, no se devuelven al cliente. | `{"message":"Internal server error"}` |
+| HTTP 500 | Una excepción inesperada llega al mapper de autenticación. Los detalles se registran en el servidor, no se devuelven al cliente. | `{"message":"Internal server error"}` |
 
 Evidencia: `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:26-43`,
 `auth/src/main/java/com/bcp/workshop/auth/AuthResource.java:60-64` y
 `auth/src/main/java/com/bcp/workshop/auth/AuthExceptionMapper.java:8-19`.
 
-**Preguntas abiertas sobre errores del framework:** el recurso consume JSON,
-pero el código no caracteriza el status ni el cuerpo para JSON malformado o un
-`Content-Type` no soportado. No se promete aquí un formato para esas respuestas;
-verificarlo en ejecución antes de que un consumidor dependa de él.
+`AuthResourceTest` comprueba en integración las respuestas JSON 400 para
+solicitudes malformadas y 415 para tipos de contenido no soportados.
 
 ### 6. Notas de seguridad
 
@@ -194,9 +194,11 @@ verificarlo en ejecución antes de que un consumidor dependa de él.
   reales en este documento.
 - CORS está habilitado y su valor predeterminado permite cualquier origen
   (`/.*/`). La allowlist sigue pendiente según H-AUTH-05.
-- El usuario y contraseña del ejemplo son credenciales ficticias de taller
-  sembradas por el repositorio. No deben utilizarse como credenciales de
-  producción.
+- El usuario y contraseña del ejemplo son credenciales ficticias de taller.
+  Solo se siembran cuando `AUTH_SEED_ENABLED=true`; la configuración
+  predeterminada no crea esas cuentas. Deshabilitar el sembrado no elimina
+  cuentas que ya existan en una base de datos. No habilites esa opción fuera
+  del entorno de taller.
 - El repositorio configura HTTP en el puerto 8080; no se documenta TLS en el
   código de `auth/`. Para despliegues fuera del entorno local, el transporte
   seguro debe confirmarse en la configuración de infraestructura.

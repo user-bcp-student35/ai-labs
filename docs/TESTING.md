@@ -22,12 +22,22 @@ El código ejecutable está en los archivos de prueba del componente.
 | `POST /auth/login` | `rejectsInvalidCredentials` | Error: usuario inexistente | HTTP 401, `{"message":"Invalid user unknown or password"}`. |
 | `POST /auth/login` | `rejectsIncorrectPasswordForExistingUser` | Error: contraseña incorrecta | HTTP 401, mensaje genérico con el username enviado. |
 | `POST /auth/login` | `returnsGenericServerErrorWhenAuthenticationThrowsUnexpectedly` | Error: excepción durante autenticación | HTTP 500, `{"message":"Internal server error"}`; no devuelve el detalle de prueba. |
-| `POST /auth/login` | JSON malformado o `Content-Type` no soportado | Pendiente, respuesta del framework no fijada en `ENDPOINTS.md` | No se afirma status ni cuerpo; requiere observación y decisión de contrato. |
+| `POST /auth/login` | `returnsJsonBadRequestForMalformedJson` | Error: JSON malformado | HTTP 400, `{"message":"Malformed request"}`. |
+| `POST /auth/login` | `returnsJsonUnsupportedMediaTypeForUnsupportedContentType` | Error: `Content-Type` no soportado | HTTP 415, `{"message":"Unsupported media type"}`. |
 
 Los casos de login están en
 [`AuthResourceTest.java`](../auth/src/test/java/com/bcp/workshop/auth/AuthResourceTest.java).
 El mapper genérico también se prueba unitariamente en
 [`AuthExceptionMapperTest.java`](../auth/src/test/java/com/bcp/workshop/auth/AuthExceptionMapperTest.java).
+
+## Inicialización y verificación de contraseña
+
+- `UserRepositoryTest.doesNotSeedWorkshopUsersWhenSeedingIsDisabled` y
+  `UserRepositoryTest.seedsWorkshopUsersWhenSeedingIsEnabled` comprueban el
+  sembrado opt-in en bases aisladas.
+- `AuthServiceTest.verifiesDummyHashForUnknownUser` comprueba que un usuario
+  inexistente también provoca una verificación PBKDF2; no es una medición
+  estadística de latencias.
 
 ## Código de las pruebas añadidas
 
@@ -131,13 +141,16 @@ void rejectsMissingPasswordField() {
 | fecha | componente | IDs | comando | directorio de ejecución | código de salida | resultado |
 |---|---|---|---|---|---:|---|
 | 2026-10-26 | auth | H-AUTH-01 a H-AUTH-08 | `mvn verify` | `auth/` | 0 | `BUILD SUCCESS`; 24 pruebas, 0 fallos, 0 errores y 0 omitidas. |
+| 2026-10-27 | auth | H-AUTH-09 a H-AUTH-11 | `python tools/lab.py test auth` | raíz del repositorio (el runner ejecuta Maven en `auth/`) | 0 | `BUILD SUCCESS`; 29 pruebas, 0 fallos, 0 errores y 0 omitidas. |
 
-- **Cobertura:** 207 de 221 líneas, **93,7%**.
+- **Cobertura 2026-10-26:** 207 de 221 líneas, **93,7%**.
+- **Cobertura de clases de producción modificadas 2026-10-27:** 153 de 164
+  líneas, **93,3%** (JaCoCo `LINE` counter para `AuthExceptionMapper`,
+  `AuthService` y `UserRepository`).
 - **Método:** JaCoCo `LINE` counter, calculado como `covered / (covered +
   missed)` desde `auth/target/site/jacoco/jacoco.xml`; reporte HTML en
   `auth/target/site/jacoco/index.html`.
-- La meta mínima de 85% se supera. En este paso solo se modificaron pruebas; el
-  porcentaje corresponde a las clases de producción instrumentadas por JaCoCo.
+- La meta mínima de 85% para las clases de producción modificadas se supera.
 - El test de error 500 registra intencionalmente una excepción de prueba en el
   log del servidor. Ese log `ERROR` es esperado; no representa un fallo del
   test ni se devuelve al cliente.
@@ -151,15 +164,19 @@ No hubo fallos ni errores en la ejecución registrada.
 - No se probó una respuesta `DOWN` de `GET /q/health`: el componente no registra
   health checks propios, y su status/cuerpo de error sigue abierto en
   [`ENDPOINTS.md`](./ENDPOINTS.md).
-- No se fijaron ni probaron los status y cuerpos de JSON malformado o
-  `Content-Type` no soportado en `POST /auth/login`; el documento de endpoints
-  los deja como respuestas del framework por confirmar.
+- No se ejecutó una comparación estadística de latencias entre usuario
+  inexistente y contraseña incorrecta para cuenta existente. La prueba verifica
+  la ruta de relleno; el comportamiento temporal cuantitativo no se declara
+  indistinguible.
 - CodeQL y Dependency Review remotos no forman parte de `mvn verify` y no se
   ejecutaron en esta validación.
+- En CI remoto del PR #22, `auth`, `api`, `web`, `analyze (javascript-typescript)`
+  y `analyze (python)` pasaron; `analyze (java-kotlin)` seguía pendiente al
+  registrar esta evidencia. CodeQL fue omitido y `dependencies` falló porque el
+  Dependency Graph del repositorio está deshabilitado. No se omitió ni redujo
+  ningún gate.
 
 ## Pruebas propuestas
 
-Cuando se confirme en ejecución y se acuerde el contrato del health `DOWN` o de
-los errores del framework, agregar pruebas de integración para esos status y
-cuerpos exactos. No se incorporan ahora para evitar convertir un comportamiento
-no verificado en contrato.
+Cuando se acuerde el comportamiento esperado de health `DOWN`, agregar pruebas
+de integración para ese status y cuerpo exactos.
