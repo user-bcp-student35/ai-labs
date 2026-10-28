@@ -252,4 +252,28 @@ class AuthResourceTest {
                 .statusCode(400)
                 .body("message", containsString("Request is null"));
     }
+
+    @Test
+    void returnsJsonBadRequestForMalformedJson() {
+        given()
+                .contentType("application/json")
+                .body("{")
+                .when().post("/auth/login")
+                .then()
+                .statusCode(400)
+                .contentType("application/json")
+                .body("message", is("Malformed request"));
+    }
+
+    @Test
+    void returnsJsonUnsupportedMediaTypeForUnsupportedContentType() {
+        given()
+                .contentType("text/plain")
+                .body("username=student&password=Workshop123!")
+                .when().post("/auth/login")
+                .then()
+                .statusCode(415)
+                .contentType("application/json")
+                .body("message", is("Unsupported media type"));
+    }
 }

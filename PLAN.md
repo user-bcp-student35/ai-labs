@@ -253,3 +253,23 @@ CodeQL y Dependency Review remotos: no ejecutados en este recorrido local.
 
 JaCoCo se generó en `auth/target/site/jacoco/index.html`. CodeQL y Dependency
 Review remotos no se ejecutaron. La cobertura final es 207/221 líneas (93,7%).
+
+## Implementacion H-AUTH-09 a H-AUTH-11 2026-10-27
+
+- **Aprobación:** se aprobaron H-AUTH-09, H-AUTH-10 y H-AUTH-11 para
+  implementación. No se proporcionó un número de Issue de GitHub.
+- **Decisiones:** sembrar cuentas solo cuando `AUTH_SEED_ENABLED=true`; crear
+  esa variable explícitamente en el flujo local del taller, Compose y pruebas.
+  La configuración general predeterminada es `false`. Las filas existentes no
+  se eliminan al deshabilitar el sembrado.
+- **Estrategia:** conservar `POST /auth/login` y verificar un hash de relleno
+  con el mismo `PasswordHasher` cuando el usuario no existe; mapear JSON
+  malformado a 400 y tipo de contenido no soportado a 415, ambos con JSON
+  `message`. Las excepciones inesperadas mantienen el 500 genérico.
+- **Validación real:** `python tools/lab.py test auth` — `BUILD SUCCESS`, 29
+  pruebas, 0 fallos, 0 errores y 0 omitidas. JaCoCo para las tres clases de
+  producción modificadas: 153/164 líneas (93,3%).
+- **Riesgo residual:** no se ejecutó una comparación estadística de latencias;
+  la prueba confirma la ruta de verificación del hash de relleno, pero no
+  demuestra equivalencia temporal. CodeQL y Dependency Review remotos tampoco
+  se ejecutaron.
