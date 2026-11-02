@@ -23,7 +23,7 @@
     "zone.js": "0.15.1"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "21.2.19",
+    "@angular-devkit/build-angular": "22.2.5",
     "@angular/cli": "21.2.19",
     "@angular/compiler-cli": "21.2.19",
     "@types/lodash": "4.17.20",
