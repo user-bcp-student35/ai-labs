@@ -189,6 +189,18 @@ def test_invalid_token_response_has_generic_detail(tmp_path: Path) -> None:
     assert response.json()["detail"] == "Invalid token"
 
 
+def test_backend_health_rejects_invalid_token(tmp_path: Path) -> None:
+    app = create_app(str(tmp_path / "workshop.db"), str(tmp_path / "uploads"))
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/backend-health",
+            headers={"Authorization": "Bearer invalid"},
+        )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid token"
+
+
 def test_backend_health_response_has_generic_transport_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -203,6 +215,30 @@ def test_backend_health_response_has_generic_transport_error(
 
     assert response.status_code == 200
     assert response.json()["body"] == "Backend health check failed"
+
+
+def test_backend_health_response_has_generic_error_for_invalid_utf8(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class HealthResponse:
+        status = 200
+        data = b"\xff"
+
+    def return_response(*args: object, **kwargs: object) -> HealthResponse:
+        return HealthResponse()
+
+    monkeypatch.setattr(urllib3.PoolManager, "request", return_response)
+    app = create_app(str(tmp_path / "workshop.db"), str(tmp_path / "uploads"))
+    with TestClient(app) as client:
+        response = client.get("/api/backend-health", headers=headers())
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "requestedBy": "student",
+        "status": 0,
+        "body": "Backend health check failed",
+    }
 
 
 def test_backend_health_success_preserves_response_shape(

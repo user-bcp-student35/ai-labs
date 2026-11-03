@@ -27,6 +27,7 @@ def backend_health(
             url,
             timeout=BACKEND_HEALTH_TIMEOUT_SECONDS,
         )
+        body = response.data.decode("utf-8")
     except (urllib3.exceptions.HTTPError, UnicodeDecodeError) as error:
         logger.warning("Backend health request failed (%s)", type(error).__name__)
         return BackendHealthOut(
@@ -37,5 +38,5 @@ def backend_health(
     return BackendHealthOut(
         requested_by=identity["username"],
         status=response.status,
-        body=response.data.decode("utf-8"),
+        body=body,
     )

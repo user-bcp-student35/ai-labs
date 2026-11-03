@@ -235,12 +235,12 @@ Estado: contrato **observado** en el código actual (`api/app/`). El contrato ac
    {"requestedBy": "student", "status": 0, "body": "Backend health check failed"}
    ```
    Si el backend responde 4xx/5xx, se refleja tal cual en `status` y `body`, y la API sigue respondiendo 200.
+   Si el cuerpo remoto no se puede decodificar como UTF-8, se devuelve el mismo fallback de consulta fallida.
 5. **Errores**
 
    | Código | Cuándo | Cuerpo |
    |---|---|---|
    | 401 | Token inválido | `{"detail": "Invalid token"}` |
-   | 500 | El backend responde con bytes que no son UTF-8 válidos (el `decode` de la rama de éxito está fuera del `try`). Es una inferencia | `Internal Server Error` (texto plano) |
 
 6. **Seguridad:** el destino es fijo por configuración del servidor, sin entrada del cliente, así que no hay SSRF por parámetro. El detalle de los errores de red solo se registra en el log. El `body` del backend se reenvía íntegro al cliente.
 

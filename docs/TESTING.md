@@ -33,9 +33,10 @@ Los modelos request/response están en `api/app/schemas.py:6`,
 | `POST /api/requirements` | Subir archivo con extensión y contenido; `test_uploads_requirement` (`api/tests/test_api.py:64`), ejecutada | Camino feliz | `201`; respuesta con `owner`, `fileName`, `storedAt` y `size`; archivo presente en el directorio de carga. |
 | `POST /api/requirements` | Archivo vacío, sin extensión y límite de tamaño (`api/app/routes/uploads.py:18`) | Borde | Pendiente. El código no define extensión permitida ni tamaño máximo; no se inventa una política ni se afirma que la falta de controles sea el resultado deseado. |
 | `POST /api/requirements` | Token inválido (`api/app/security.py:24`); falta el campo `file`; fallo de escritura (`api/app/routes/uploads.py:19`) | Error documentado | `401`, `422` y `500` respectivamente. No tienen prueba específica. El `500` por escritura está descrito como inferencia en `ENDPOINTS.md`. |
-| `GET /api/backend-health` | Backend responde `200` con cuerpo UTF-8; `test_backend_health_success_preserves_response_shape` (`api/tests/test_api.py:208`), ejecutada | Camino feliz | La API devuelve `200` con `requestedBy`, el status del backend y el body decodificado. |
-| `GET /api/backend-health` | Fallo de transporte; `test_backend_health_response_has_generic_transport_error` (`api/tests/test_api.py:192`), ejecutada | Borde / fallo degradado | La API conserva `200` y responde `status: 0`, `body: "Backend health check failed"`. |
-| `GET /api/backend-health` | Token inválido (`api/app/security.py:24`); backend devuelve bytes UTF-8 inválidos (`api/app/routes/backend_health.py:40`) | Error documentado | `401` con `{"detail":"Invalid token"}`; o `500 Internal Server Error` para el error de decodificación documentado. Ninguno tiene prueba específica. |
+| `GET /api/backend-health` | Backend responde `200` con cuerpo UTF-8; `test_backend_health_success_preserves_response_shape`, ejecutada | Camino feliz | La API devuelve `200` con `requestedBy`, el status del backend y el body decodificado. |
+| `GET /api/backend-health` | Fallo de transporte; `test_backend_health_response_has_generic_transport_error`, ejecutada | Borde / fallo degradado | La API conserva `200` y responde `status: 0`, `body: "Backend health check failed"`. |
+| `GET /api/backend-health` | Backend devuelve bytes no UTF-8; `test_backend_health_response_has_generic_error_for_invalid_utf8`, ejecutada | Error controlado | La API conserva `200`, `requestedBy` de la identidad autenticada, `status: 0` y `body: "Backend health check failed"`; no produce un 500. |
+| `GET /api/backend-health` | Token inválido; `test_backend_health_rejects_invalid_token`, ejecutada | Error documentado | `401` con `{"detail":"Invalid token"}`. |
 
 La suite también verifica la disponibilidad de `create_app` y `app.main:app`
 (`test_app_factory_and_import_entrypoint_are_available`,
@@ -201,10 +202,11 @@ integradas ni como verificación de comportamientos pendientes.
 
 ### Pruebas propuestas
 
-Las propuestas de código anteriores aún deben añadirse a `api/tests/test_api.py`
-y ejecutarse desde `api/`. Las pruebas de tamaño y extensión requieren que se
-acuerden primero los valores aceptados. No se atribuyen resultados a ninguna
-prueba pendiente.
+Las propuestas de código restantes aún deben añadirse a `api/tests/test_api.py`
+y ejecutarse desde `api/`. Para H-API-08, la prueba de bytes no UTF-8 y la
+caracterización de autenticación del endpoint ya se añadieron y ejecutaron.
+Las pruebas de tamaño y extensión requieren que se acuerden primero los valores
+aceptados. No se atribuyen resultados a ninguna prueba pendiente.
 
 ## Documentos consultados
 
