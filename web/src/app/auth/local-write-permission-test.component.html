@@ -1,0 +1,75 @@
+<!-- local-write-permission-test.component.html -->
+<section class="write-test" aria-labelledby="write-test-title">
+  <h1 id="write-test-title">Prueba local de permiso de escritura</h1>
+
+  <p id="write-test-help">
+    La prueba usa el directorio configurado por el servidor. No puedes elegir
+    una ruta ni el contenido que se escribe.
+  </p>
+
+  <button
+    type="button"
+    class="run-button"
+    [disabled]="isLoading"
+    [attr.aria-describedby]="'write-test-help'"
+    (click)="runTest()"
+  >
+    {{ isLoading ? 'Comprobando…' : 'Ejecutar prueba local' }}
+  </button>
+
+  <p *ngIf="state === 'empty'" class="notice" role="status" aria-live="polite">
+    Aún no se ha ejecutado la prueba.
+  </p>
+
+  <p *ngIf="state === 'loading'" class="notice" role="status" aria-live="polite">
+    Comprobando el permiso de escritura…
+  </p>
+
+  <div
+    *ngIf="state === 'result' && result as report"
+    class="report"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <h2>{{ resultTitle(report.result) }}</h2>
+    <p>{{ resultDescription(report.result) }}</p>
+
+    <p class="cleanup-message">
+      {{ cleanupDescription(report.cleanup) }}
+    </p>
+
+    <dl>
+      <dt>Permiso de escritura</dt>
+      <dd>
+        {{
+          report.writePermission === null
+            ? 'No determinado'
+            : report.writePermission
+              ? 'Sí'
+              : 'No'
+        }}
+      </dd>
+
+      <dt>Estado de limpieza</dt>
+      <dd>{{ report.cleanup }}</dd>
+
+      <dt>Identificador de prueba</dt>
+      <dd>{{ report.testId }}</dd>
+
+      <dt>Comprobado</dt>
+      <dd>
+        <time [attr.datetime]="report.checkedAt">{{ report.checkedAt }}</time>
+      </dd>
+
+      <ng-container *ngIf="report.code">
+        <dt>Código</dt>
+        <dd>{{ report.code }}</dd>
+      </ng-container>
+    </dl>
+  </div>
+
+  <p *ngIf="state === 'error'" class="error-message" role="alert">
+    {{ errorMessage }}
+  </p>
+</section>
