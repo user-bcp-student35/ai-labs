@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
@@ -29,12 +30,15 @@ public class LegacyDatabase {
     }
 
     public UserRecord findByCredentials(String username, String password) {
-        String sql = "SELECT id, username, display_name, role FROM legacy_users WHERE username='" + username + "' AND password='" + password + "'";
+        String sql = "SELECT id, username, display_name, role FROM legacy_users WHERE username=? AND password=?";
         try (Connection connection = DriverManager.getConnection(DB_URL);
-             Statement statement = connection.createStatement();
-             ResultSet result = statement.executeQuery(sql)) {
-            if (result.next()) {
-                return new UserRecord(result.getLong("id"), result.getString("username"), result.getString("display_name"), result.getString("role"));
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, username);
+            statement.setString(2, password);
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    return new UserRecord(result.getLong("id"), result.getString("username"), result.getString("display_name"), result.getString("role"));
+                }
             }
         } catch (Exception error) {
             error.printStackTrace();
