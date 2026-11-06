@@ -1,0 +1,22 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border: 2px solid currentColor;
+  border-radius: 0.25rem;
+  font-weight: 600;
+}
+
+.status--pending {
+  border-style: dashed;
+}
+
+.status--failed,
+.status--expired {
+  border-style: double;
+}
+
+.status--unknown {
+  border-style: dotted;
+}

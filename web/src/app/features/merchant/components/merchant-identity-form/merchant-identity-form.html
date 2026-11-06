@@ -1,0 +1,30 @@
+<section class="identity" aria-labelledby="identity-heading">
+  <h2 id="identity-heading">{{ copy.identityHeading }} <span class="badge">{{ copy.provisionalBadge }}</span></h2>
+  <p class="note">{{ copy.identityNote }}</p>
+
+  @if (merchantId() !== null && !editing()) {
+    <p class="active"><strong>{{ copy.identityActive(merchantId() ?? '') }}</strong></p>
+    <button type="button" class="secondary" (click)="change()">{{ copy.identityChange }}</button>
+  } @else {
+    <form (submit)="save($event)" novalidate>
+      <div class="field" [class.field--invalid]="invalid()">
+        <label for="merchant-id">{{ copy.identityLabel }}</label>
+        <p class="field__hint" id="merchant-id-hint">{{ copy.identityHint }}</p>
+        <input
+          #idInput
+          id="merchant-id"
+          type="text"
+          autocomplete="off"
+          [formControl]="control"
+          aria-required="true"
+          [attr.aria-invalid]="invalid() ? 'true' : null"
+          [attr.aria-describedby]="invalid() ? 'merchant-id-hint merchant-id-error' : 'merchant-id-hint'"
+        />
+        @if (invalid()) {
+          <p class="field__error" id="merchant-id-error"><span>{{ copy.errorPrefix }}</span> {{ copy.identityInvalid }}</p>
+        }
+      </div>
+      <button type="submit">{{ copy.identitySave }}</button>
+    </form>
+  }
+</section>

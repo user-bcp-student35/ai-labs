@@ -12,5 +12,9 @@ export const routes: Routes = [
     canActivate: [activeWalletGuard],
     loadChildren: () => import('./features/wallet/wallet.routes').then((module) => module.WALLET_ROUTES),
   },
+  {
+    path: 'merchant',
+    loadChildren: () => import('./features/merchant/merchant.routes').then((module) => module.MERCHANT_ROUTES),
+  },
   { path: '**', redirectTo: 'onboarding' },
 ];

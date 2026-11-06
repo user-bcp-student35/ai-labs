@@ -1,0 +1,37 @@
+.demo {
+  margin-block-start: 2rem;
+  padding: 0.75rem 1rem;
+  border: 2px dashed var(--color-border);
+  border-radius: 0.375rem;
+}
+
+.note {
+  margin: 0 0 0.75rem;
+  color: var(--color-muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-block-end: 1rem;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.field select {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.error {
+  color: var(--color-error);
+  font-weight: 600;
+}

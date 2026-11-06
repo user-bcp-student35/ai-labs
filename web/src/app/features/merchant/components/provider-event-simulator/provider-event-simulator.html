@@ -1,0 +1,20 @@
+<section class="demo" aria-labelledby="demo-heading">
+  <h2 id="demo-heading">{{ copy.demoHeading }}</h2>
+  <p class="note">{{ copy.demoNote }}</p>
+  <form (submit)="submit($event)">
+    <div class="field">
+      <label for="demo-status">{{ copy.demoStatusLabel }}</label>
+      <select id="demo-status" [formControl]="status">
+        @for (option of options; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+    <button type="submit" [disabled]="busy()" [attr.aria-busy]="busy()">
+      {{ busy() ? copy.demoSubmitting : copy.demoSubmit }}
+    </button>
+  </form>
+  @if (outcome(); as message) {
+    <p [class.error]="failed()" [attr.role]="failed() ? 'alert' : 'status'">{{ message }}</p>
+  }
+</section>

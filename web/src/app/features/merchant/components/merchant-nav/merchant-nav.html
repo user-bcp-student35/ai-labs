@@ -1,0 +1,16 @@
+<nav [attr.aria-label]="copy.navLabel">
+  <ul>
+    <li>
+      <a
+        [routerLink]="paymentsRoute"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >{{ copy.navPayments }}</a
+      >
+    </li>
+    <li>
+      <a [routerLink]="historyRoute" routerLinkActive="active" ariaCurrentWhenActive="page">{{ copy.navHistory }}</a>
+    </li>
+  </ul>
+</nav>
