@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import Header, HTTPException, Request, status
 
 PAYER_HEADER = "X-Payer-Id"
+MERCHANT_HEADER = "X-Merchant-Id"
 SAFE_HEADER_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,64}$")
 
 
@@ -41,3 +42,10 @@ def request_context(
 
 def services_of(request: Request):
     return request.app.state.services
+
+
+def merchant_id_of(x_merchant_id: Annotated[str | None, Header()] = None) -> str:
+    # Solo MVP: el comercio viene de X-Merchant-Id hasta contar con auth/ (mismo patrón provisional que P-3).
+    if x_merchant_id is None or not SAFE_HEADER_PATTERN.fullmatch(x_merchant_id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="identidad de comercio requerida")
+    return x_merchant_id

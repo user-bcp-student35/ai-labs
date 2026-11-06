@@ -5,6 +5,8 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from app.ports.idempotency_store import STATUS_EXPIRED, STATUS_FAILED, STATUS_PENDING, STATUS_SUCCEEDED
+
 DEFAULT_CHANNEL_KEY = "default"
 POLICY_RETURN_ORIGINAL = "return_original"
 SUPPORTED_EXPIRED_KEY_POLICIES = (POLICY_RETURN_ORIGINAL,)
@@ -68,8 +70,60 @@ DEFAULT_ONB_REF_MAU_MAX = 2000
 DEFAULT_ONB_REF_CAC_TARGET_CENTS = 1000
 
 
+# Estado de pagos QR para comercios (HU-MERCH). TODOS estos valores son PROVISIONALES y NO APROBADOS:
+# no resuelven OQ-08, OQ-24, OQ-25, OQ-26, OQ-27 ni OQ-28 (siguen "Abiertas" en docs/OPEN-QUESTIONS.md).
+ENV_MERCH_CALLBACK_SECRET = "MERCH_QR_CALLBACK_SECRET"  # vacío = recepción de eventos cerrada (OQ-26)
+ENV_MERCH_STATUSES = "MERCH_QR_STATUSES"  # lista separada por comas (OQ-24)
+ENV_MERCH_STATUS_MAP = "MERCH_QR_PROVIDER_STATUS_MAP"  # `ESTADO_PROVEEDOR=ESTADO_COMERCIO,...` (OQ-24, OQ-26)
+ENV_MERCH_REFLECT_DEADLINE = "MERCH_QR_REFLECT_DEADLINE_SECONDS"  # (OQ-28)
+# Provisional y SOLO para entornos locales: habilita `POST .../simulate-event`. Por defecto cerrado (404).
+ENV_MERCH_DEMO_ENABLED = "MERCH_QR_DEMO_ENABLED"
+ENV_TRUE_VALUE = "true"
+
+# Provisional (OQ-24): los mismos estados del pagador; el inicial de todo intento QR es PENDING.
+MERCH_INITIAL_STATUS = STATUS_PENDING
+DEFAULT_MERCH_STATUSES = (STATUS_PENDING, STATUS_SUCCEEDED, STATUS_FAILED, STATUS_EXPIRED)
+# Provisional (OQ-24, OQ-26): estados del proveedor simulado (`REJECTED`) y los del pagador.
+DEFAULT_MERCH_STATUS_MAP = {
+    "PENDING": STATUS_PENDING,
+    "SUCCEEDED": STATUS_SUCCEEDED,
+    "REJECTED": STATUS_FAILED,
+    "FAILED": STATUS_FAILED,
+    "EXPIRED": STATUS_EXPIRED,
+}
+# Provisional (OQ-28): plazo máximo entre aplicar un evento y verlo en la vista del comercio.
+DEFAULT_MERCH_REFLECT_DEADLINE_SECONDS = 5
+
+
 def _default_retention() -> dict[str, int]:
     return {DEFAULT_CHANNEL_KEY: DEFAULT_RETENTION_SECONDS}
+
+
+def _default_merch_status_map() -> dict[str, str]:
+    return dict(DEFAULT_MERCH_STATUS_MAP)
+
+
+@dataclass(frozen=True)
+class MerchantQrSettings:
+    """Configuración provisional del estado de pagos QR (ver nota superior): nada aquí está aprobado."""
+
+    callback_secret: str = field(default="", repr=False)
+    statuses: tuple[str, ...] = DEFAULT_MERCH_STATUSES
+    provider_status_map: dict[str, str] = field(default_factory=_default_merch_status_map)
+    reflect_deadline_seconds: int = DEFAULT_MERCH_REFLECT_DEADLINE_SECONDS
+    demo_enabled: bool = False
+
+    def __post_init__(self) -> None:
+        if MERCH_INITIAL_STATUS not in self.statuses:
+            raise ValueError("el conjunto de estados del comercio debe incluir el estado inicial")
+        if not set(self.provider_status_map.values()) <= set(self.statuses):
+            raise ValueError("el mapeo apunta a un estado fuera del conjunto del comercio")
+        if self.reflect_deadline_seconds <= 0:
+            raise ValueError("el plazo de reflejo debe ser positivo")
+
+    @property
+    def terminal_statuses(self) -> frozenset[str]:
+        return frozenset(self.statuses) - {MERCH_INITIAL_STATUS}
 
 
 @dataclass(frozen=True)
@@ -106,6 +160,7 @@ class Settings:
     active_payers_min: int = DEFAULT_ACTIVE_PAYERS_MIN
     active_payers_max: int = DEFAULT_ACTIVE_PAYERS_MAX
     onboarding: OnboardingSettings = field(default_factory=OnboardingSettings)
+    merchant_qr: MerchantQrSettings = field(default_factory=MerchantQrSettings)
 
     def __post_init__(self) -> None:
         if self.attempt_window_seconds <= 0:
@@ -134,6 +189,30 @@ def _parse_channel_ints(raw: str) -> dict[str, int]:
             raise ValueError("formato inválido en configuración por canal")
         parsed[channel.strip()] = int(number)
     return parsed
+
+
+def _parse_status_map(raw: str) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for pair in raw.split(","):
+        provider_status, separator, merchant_status = pair.partition("=")
+        if not separator or not provider_status.strip() or not merchant_status.strip():
+            raise ValueError("formato inválido en el mapeo de estados")
+        parsed[provider_status.strip().upper()] = merchant_status.strip().upper()
+    return parsed
+
+
+def _load_merchant_qr_settings(env: Mapping[str, str]) -> MerchantQrSettings:
+    defaults = MerchantQrSettings()
+    statuses_raw = env.get(ENV_MERCH_STATUSES, "").strip()
+    map_raw = env.get(ENV_MERCH_STATUS_MAP, "").strip()
+    statuses = tuple(item.strip().upper() for item in statuses_raw.split(",") if item.strip())
+    return MerchantQrSettings(
+        callback_secret=env.get(ENV_MERCH_CALLBACK_SECRET, ""),
+        statuses=statuses or defaults.statuses,
+        provider_status_map=_parse_status_map(map_raw) if map_raw else defaults.provider_status_map,
+        reflect_deadline_seconds=int(env.get(ENV_MERCH_REFLECT_DEADLINE) or defaults.reflect_deadline_seconds),
+        demo_enabled=env.get(ENV_MERCH_DEMO_ENABLED, "").strip().lower() == ENV_TRUE_VALUE,
+    )
 
 
 def _parse_content(raw: str) -> dict[str, str]:
@@ -185,4 +264,5 @@ def load_settings(env: Mapping[str, str]) -> Settings:
         cohort=env.get(ENV_COHORT) or defaults.cohort,
         content_overrides=_parse_content(content_raw) if content_raw else {},
         onboarding=_load_onboarding_settings(env),
+        merchant_qr=_load_merchant_qr_settings(env),
     )

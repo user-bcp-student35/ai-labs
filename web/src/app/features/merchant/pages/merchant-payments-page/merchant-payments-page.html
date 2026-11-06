@@ -1,0 +1,148 @@
+<h1 #heading tabindex="-1">{{ copy.heading }}</h1>
+<p>{{ copy.intro }}</p>
+
+<app-merchant-nav />
+<app-merchant-identity-form />
+
+@if (merchantId() === null) {
+  <p>{{ copy.identityRequired }}</p>
+} @else {
+  <section aria-labelledby="filters-heading">
+    <h2 id="filters-heading">{{ copy.filtersHeading }}</h2>
+    <form class="filters" [formGroup]="filters" (ngSubmit)="apply()" novalidate>
+      <div class="field">
+        <label for="filter-reference">{{ copy.referenceLabel }}</label>
+        <p class="field__hint" id="filter-reference-hint">{{ copy.referenceHint }}</p>
+        <input
+          id="filter-reference"
+          type="text"
+          autocomplete="off"
+          formControlName="reference"
+          aria-describedby="filter-reference-hint"
+        />
+      </div>
+
+      <div class="field">
+        <label for="filter-status">{{ copy.statusLabel }}</label>
+        <p class="field__hint" id="filter-status-hint">{{ copy.statusHint }}</p>
+        <select id="filter-status" formControlName="status" aria-describedby="filter-status-hint">
+          <option value="">{{ copy.statusAll }}</option>
+          @for (option of statusOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <p class="field__hint" id="filter-date-hint">{{ copy.dateHint }}</p>
+      <div class="field" [class.field--invalid]="dateError()">
+        <label for="filter-date-from">{{ copy.dateFromLabel }}</label>
+        <input
+          #dateFromInput
+          id="filter-date-from"
+          type="date"
+          formControlName="dateFrom"
+          [attr.aria-invalid]="dateError() ? 'true' : null"
+          [attr.aria-describedby]="dateError() ? 'filter-date-hint date-error' : 'filter-date-hint'"
+        />
+      </div>
+      <div class="field" [class.field--invalid]="dateError()">
+        <label for="filter-date-to">{{ copy.dateToLabel }}</label>
+        <input
+          id="filter-date-to"
+          type="date"
+          formControlName="dateTo"
+          [attr.aria-invalid]="dateError() ? 'true' : null"
+          [attr.aria-describedby]="dateError() ? 'filter-date-hint date-error' : 'filter-date-hint'"
+        />
+      </div>
+      @if (dateError(); as message) {
+        <p class="field__error" id="date-error"><span>{{ copy.errorPrefix }}</span> {{ message }}</p>
+      }
+
+      <div class="actions">
+        <button type="submit" [disabled]="phase() === 'loading'">{{ copy.apply }}</button>
+        <button type="button" class="secondary" (click)="clear()" [disabled]="phase() === 'loading'">{{ copy.clear }}</button>
+      </div>
+    </form>
+  </section>
+
+  <section aria-labelledby="list-heading">
+    <h2 id="list-heading">{{ copy.listHeading }}</h2>
+
+    @switch (phase()) {
+      @case ('loading') {
+        <p role="status">{{ copy.loading }}</p>
+      }
+      @case ('error') {
+        <p class="error" role="alert">{{ errorMessage() }}</p>
+        <button type="button" (click)="retry()">{{ copy.retry }}</button>
+      }
+      @case ('ready') {
+        @if (noResultsMessage() !== null) {
+          @if (isFiltered()) {
+            <p>{{ noResultsMessage() }}</p>
+            <p>{{ copy.noResultsAction }}</p>
+          } @else {
+            <p>{{ copy.empty }}</p>
+          }
+        } @else {
+          <div class="table-wrap" role="region" tabindex="0" aria-labelledby="list-heading">
+            <table>
+              <caption class="visually-hidden">{{ copy.tableCaption }}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ copy.colReference }}</th>
+                  <th scope="col">{{ copy.colAmount }}</th>
+                  <th scope="col">{{ copy.colStatus }}</th>
+                  <th scope="col">{{ copy.colCreated }}</th>
+                  <th scope="col">{{ copy.colUpdated }}</th>
+                  <th scope="col">{{ copy.colActions }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of items(); track item.reference) {
+                  <tr>
+                    <th scope="row" class="reference">
+                      <code>{{ item.reference }}</code>
+                      <button
+                        type="button"
+                        class="secondary copy"
+                        [attr.aria-label]="copy.copyAria(item.reference)"
+                        (click)="copyReference(item.reference)"
+                      >
+                        {{ copiedReference() === item.reference ? copy.copied : copy.copy }}
+                      </button>
+                    </th>
+                    <td>{{ formatCents(item.amount_cents) }}</td>
+                    <td><app-status-badge [status]="item.status" [label]="item.status_label" /></td>
+                    <td>{{ formatDateTime(item.created_at) }}</td>
+                    <td>{{ formatDateTime(item.status_updated_at) }}</td>
+                    <td>
+                      <a
+                        class="row-link"
+                        [routerLink]="attemptRoute(item.reference)"
+                        [attr.aria-label]="copy.viewHistoryAria(item.reference)"
+                        >{{ copy.viewHistory }}</a
+                      >
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p>{{ copy.showing(items().length, total()) }}</p>
+        }
+        @if (refreshFailed()) {
+          <p class="error" role="status">{{ copy.refreshFailed }}</p>
+        }
+        @if (refreshSeconds(); as seconds) {
+          <p class="hint">{{ copy.autoRefresh(seconds) }}</p>
+        }
+      }
+    }
+  </section>
+
+  <app-qr-simulator (created)="onSimulated()" />
+}
+
+<p><a [routerLink]="paymentsRoute">{{ copy.backToPayments }}</a></p>

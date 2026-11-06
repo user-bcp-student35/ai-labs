@@ -30,9 +30,30 @@ export const API_PATHS = {
   paymentAbandon: (intentId: string): string => `/payments/confirmations/${encodeURIComponent(intentId)}/abandon`,
   payment: (paymentId: string): string => `/payments/${encodeURIComponent(paymentId)}`,
   paymentRetries: (paymentId: string): string => `/payments/${encodeURIComponent(paymentId)}/retries`,
+  merchantQrPayments: '/merchant/qr-payments',
+  merchantQrHistory: '/merchant/qr-payments/history',
+  merchantQrAttemptHistory: (reference: string): string =>
+    `/merchant/qr-payments/${encodeURIComponent(reference)}/history`,
+  merchantQrSimulate: (reference: string): string =>
+    `/merchant/qr-payments/${encodeURIComponent(reference)}/simulate-event`,
 } as const;
 
+/** Prefijo de las rutas de la API que usan identidad de comercio (X-Merchant-Id) y no la del pagador. */
+export const MERCHANT_API_PREFIX = '/merchant';
+export const MERCHANT_ID_HEADER = 'X-Merchant-Id';
+
+/** Claves de almacenamiento del navegador (solo sessionStorage; nunca datos sensibles). */
+export const STORAGE_KEYS = {
+  merchantId: 'wallet.merchantId',
+} as const;
+
+/** Formato que acepta la API para identificadores (api/app/schemas_merchant.py: SAFE_ID_PATTERN, 64). */
+export const SAFE_ID_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/;
+
 export const APP_ROUTES = {
+  merchant: '/merchant',
+  merchantHistory: '/merchant/history',
+  merchantAttempt: (reference: string): string => `/merchant/${encodeURIComponent(reference)}`,
   onboarding: '/onboarding',
   payments: '/payments',
   paymentConfirm: '/payments/confirm',

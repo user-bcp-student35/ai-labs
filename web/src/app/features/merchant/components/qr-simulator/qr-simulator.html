@@ -1,0 +1,35 @@
+<section class="simulator" aria-labelledby="simulator-heading">
+  <h2 id="simulator-heading">{{ copy.simulatorHeading }}</h2>
+  <p class="note">{{ copy.simulatorNote }}</p>
+
+  @if (merchantId() === null) {
+    <p>{{ copy.simulatorNeedsMerchant }}</p>
+  } @else {
+    <form (submit)="submit($event)" novalidate>
+      <div class="field" [class.field--invalid]="amountError()">
+        <label for="sim-amount">{{ copy.simulatorAmountLabel }}</label>
+        <p class="field__hint" id="sim-amount-hint">{{ copy.simulatorAmountHint }}</p>
+        <input
+          #amountInput
+          id="sim-amount"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          [formControl]="amount"
+          aria-required="true"
+          [attr.aria-invalid]="amountError() ? 'true' : null"
+          [attr.aria-describedby]="amountError() ? 'sim-amount-hint sim-amount-error' : 'sim-amount-hint'"
+        />
+        @if (amountError(); as message) {
+          <p class="field__error" id="sim-amount-error"><span>{{ copy.errorPrefix }}</span> {{ message }}</p>
+        }
+      </div>
+      @if (serviceError(); as message) {
+        <p class="field__error" role="alert">{{ message }}</p>
+      }
+      <button type="submit" [disabled]="busy()" [attr.aria-busy]="busy()">
+        {{ busy() ? copy.simulatorSubmitting : copy.simulatorSubmit }}
+      </button>
+    </form>
+  }
+</section>

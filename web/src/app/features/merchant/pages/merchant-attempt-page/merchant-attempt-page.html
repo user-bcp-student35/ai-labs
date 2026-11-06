@@ -1,0 +1,71 @@
+<h1 #heading tabindex="-1">{{ copy.detailHeading }}</h1>
+<p>{{ copy.detailReference }}: <code class="reference">{{ reference }}</code></p>
+
+<app-merchant-nav />
+<app-merchant-identity-form />
+
+@if (merchantId() === null) {
+  <p>{{ copy.identityRequired }}</p>
+} @else {
+  @switch (phase()) {
+    @case ('loading') {
+      <p role="status">{{ copy.detailLoading }}</p>
+    }
+    @case ('not-found') {
+      <p class="error" role="alert">{{ copy.detailNotFound }}</p>
+    }
+    @case ('error') {
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+      <button type="button" (click)="retry()">{{ copy.retry }}</button>
+    }
+    @case ('ready') {
+      @if (payment(); as current) {
+        <dl class="summary">
+          <dt>{{ copy.detailCurrent }}</dt>
+          <dd><app-status-badge [status]="current.status" [label]="current.status_label" /></dd>
+          <dt>{{ copy.detailAmount }}</dt>
+          <dd>{{ formatCents(current.amount_cents) }}</dd>
+        </dl>
+      }
+
+      <section aria-labelledby="timeline-heading">
+        <h2 id="timeline-heading">{{ copy.detailTimelineHeading }}</h2>
+        @if (changes().length === 0) {
+          <p>{{ copy.detailEmpty }}</p>
+        } @else {
+          <ol class="timeline">
+            @for (change of changes(); track $index) {
+              <li>
+                <span class="change">
+                  @if (change.previous_status === '') {
+                    <span>{{ copy.noPreviousStatus }}</span>
+                  } @else {
+                    <app-status-badge [status]="change.previous_status" [label]="change.previous_status_label" />
+                  }
+                  <span aria-hidden="true">→</span>
+                  <span class="visually-hidden">{{ copy.changeConnector }}</span>
+                  <app-status-badge [status]="change.status" [label]="change.status_label" />
+                </span>
+                <p class="when">{{ copy.detailOccurred }}: {{ formatDateTime(change.occurred_at) }}</p>
+                <p class="when">{{ copy.detailReceived }}: {{ formatDateTime(change.received_at) }}</p>
+              </li>
+            }
+          </ol>
+        }
+        @if (refreshFailed()) {
+          <p class="error" role="status">{{ copy.detailRefreshFailed }}</p>
+        }
+      </section>
+
+      @if (demoEnabled()) {
+        <app-provider-event-simulator [reference]="reference" (simulated)="onSimulated()" />
+      }
+    }
+  }
+}
+
+<p>
+  <a [routerLink]="listRoute">{{ copy.backToList }}</a>
+  ·
+  <a [routerLink]="historyRoute">{{ copy.backToHistory }}</a>
+</p>

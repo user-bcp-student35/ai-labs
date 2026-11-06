@@ -1,0 +1,133 @@
+<h1 #heading tabindex="-1">{{ copy.historyHeading }}</h1>
+<p>{{ copy.historyIntro }}</p>
+
+<app-merchant-nav />
+<app-merchant-identity-form />
+
+@if (merchantId() === null) {
+  <p>{{ copy.identityRequired }}</p>
+} @else {
+  <section aria-labelledby="hist-filters-heading">
+    <h2 id="hist-filters-heading">{{ copy.historyFiltersHeading }}</h2>
+    <form class="filters" [formGroup]="filters" (ngSubmit)="apply()" novalidate>
+      <div class="field">
+        <label for="hist-reference">{{ copy.referenceLabel }}</label>
+        <p class="field__hint" id="hist-reference-hint">{{ copy.referenceHint }}</p>
+        <input
+          id="hist-reference"
+          type="text"
+          autocomplete="off"
+          formControlName="reference"
+          aria-describedby="hist-reference-hint"
+        />
+      </div>
+
+      <p class="field__hint" id="hist-date-hint">{{ copy.historyDateHint }}</p>
+      <div class="field" [class.field--invalid]="dateError()">
+        <label for="hist-date-from">{{ copy.historyDateFromLabel }}</label>
+        <input
+          #dateFromInput
+          id="hist-date-from"
+          type="date"
+          formControlName="dateFrom"
+          [attr.aria-invalid]="dateError() ? 'true' : null"
+          [attr.aria-describedby]="dateError() ? 'hist-date-hint hist-date-error' : 'hist-date-hint'"
+        />
+      </div>
+      <div class="field" [class.field--invalid]="dateError()">
+        <label for="hist-date-to">{{ copy.historyDateToLabel }}</label>
+        <input
+          id="hist-date-to"
+          type="date"
+          formControlName="dateTo"
+          [attr.aria-invalid]="dateError() ? 'true' : null"
+          [attr.aria-describedby]="dateError() ? 'hist-date-hint hist-date-error' : 'hist-date-hint'"
+        />
+      </div>
+      @if (dateError(); as message) {
+        <p class="field__error" id="hist-date-error"><span>{{ copy.errorPrefix }}</span> {{ message }}</p>
+      }
+
+      <div class="actions">
+        <button type="submit" [disabled]="phase() === 'loading'">{{ copy.apply }}</button>
+        <button type="button" class="secondary" (click)="clear()" [disabled]="phase() === 'loading'">{{ copy.clear }}</button>
+      </div>
+    </form>
+  </section>
+
+  <section aria-labelledby="hist-list-heading">
+    <h2 id="hist-list-heading">{{ copy.historyListHeading }}</h2>
+
+    @switch (phase()) {
+      @case ('loading') {
+        <p role="status">{{ copy.historyLoading }}</p>
+      }
+      @case ('error') {
+        <p class="error" role="alert">{{ errorMessage() }}</p>
+        <button type="button" (click)="retry()">{{ copy.retry }}</button>
+      }
+      @case ('ready') {
+        @if (noResultsMessage() !== null) {
+          @if (isFiltered()) {
+            <p>{{ noResultsMessage() }}</p>
+            <p>{{ copy.historyNoResultsAction }}</p>
+          } @else {
+            <p>{{ copy.historyEmpty }}</p>
+          }
+        } @else {
+          <div class="table-wrap" role="region" tabindex="0" aria-labelledby="hist-list-heading">
+            <table>
+              <caption class="visually-hidden">{{ copy.historyTableCaption }}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ copy.colReference }}</th>
+                  <th scope="col">{{ copy.colChange }}</th>
+                  <th scope="col">{{ copy.colEventDate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (change of items(); track $index) {
+                  <tr>
+                    <th scope="row" class="reference">
+                      <a
+                        [routerLink]="attemptRoute(change.reference)"
+                        [attr.aria-label]="copy.viewHistoryAria(change.reference)"
+                        ><code>{{ change.reference }}</code></a
+                      >
+                    </th>
+                    <td>
+                      <span class="change">
+                        @if (change.previous_status === '') {
+                          <span>{{ copy.noPreviousStatus }}</span>
+                        } @else {
+                          <app-status-badge [status]="change.previous_status" [label]="change.previous_status_label" />
+                        }
+                        <span aria-hidden="true">→</span>
+                        <span class="visually-hidden">{{ copy.changeConnector }}</span>
+                        <app-status-badge [status]="change.status" [label]="change.status_label" />
+                      </span>
+                    </td>
+                    <td>{{ formatDateTime(change.occurred_at) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p>{{ copy.historyShowing(range().from, range().to, total()) }}</p>
+          <nav class="pagination" [attr.aria-label]="copy.paginationLabel">
+            <button type="button" class="secondary" (click)="previous()" [disabled]="!range().hasPrevious">
+              {{ copy.previousPage }}
+            </button>
+            <button type="button" class="secondary" (click)="next()" [disabled]="!range().hasNext">
+              {{ copy.nextPage }}
+            </button>
+          </nav>
+        }
+        @if (refreshFailed()) {
+          <p class="error" role="status">{{ copy.historyRefreshFailed }}</p>
+        }
+        <p class="hint">{{ copy.autoRefresh(pollSeconds) }}</p>
+      }
+    }
+  </section>
+}

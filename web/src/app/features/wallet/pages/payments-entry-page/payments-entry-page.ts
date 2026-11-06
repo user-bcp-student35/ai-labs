@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { APP_ROUTES } from '../../../../core/config/app-config';
 import { LiveAnnouncer } from '../../../../core/a11y/live-announcer';
 import { PaymentsApiService } from '../../data/payments-api.service';
+import { MERCHANT_COPY } from '../../../merchant/merchant.copy';
 import { RecipientId } from '../../data/payments.models';
 import { parseAmountToCents } from '../../rules/amount';
 import { PaymentFlowStore } from '../../state/payment-flow.store';
@@ -35,6 +36,8 @@ export class PaymentsEntryPage {
   protected readonly copy = WALLET_COPY;
   protected readonly recipients = RECIPIENT_OPTIONS;
   protected readonly historyRoute = APP_ROUTES.paymentHistory;
+  protected readonly merchantRoute = APP_ROUTES.merchant;
+  protected readonly merchantCopy = MERCHANT_COPY;
   protected readonly submitted = signal(false);
   protected readonly busy = signal(false);
   protected readonly serviceError = signal<string | null>(null);
